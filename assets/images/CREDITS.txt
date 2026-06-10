@@ -1,0 +1,14 @@
+DiGame uses CC0 (public domain) assets by Kenney (www.kenney.nl):
+
+- Tiny Town — overworld tiles
+- Tiny Dungeon — chapel tiles
+- Roguelike/RPG Pack — forest tiles, monsters, props
+- Roguelike Characters — player and NPC sprites
+- RPG Audio — UI and action sounds
+- Impact Sounds — footsteps and impacts
+
+License: Creative Commons CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Source archives are stored in assets/images/_src/ (not deployed to docs/).
+Run `npm run setup:assets` to rebuild game-ready assets from sources.

@@ -1,0 +1,21 @@
+{
+  "name": "digame",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A simple RPG Maker-like smartphone game. Built with Phaser 3, TypeScript, Vite. Free hosted on GitHub Pages.",
+  "scripts": {
+    "dev": "npm run setup:assets && npm run gen:maps && vite",
+    "setup:assets": "node scripts/setup-assets.mjs",
+    "gen:maps": "node scripts/gen-maps.mjs",
+    "build": "npm run setup:assets && npm run gen:maps && tsc && vite build && node scripts/copy-assets.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.6.2",
+    "vite": "^6.0.1"
+  }
+}

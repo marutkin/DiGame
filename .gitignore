@@ -1,0 +1,45 @@
+# DiGame — .gitignore
+# Phaser 3 + TypeScript + Vite project
+# Build target is docs/ (committed for GitHub Pages)
+
+# Dependencies
+node_modules/
+
+# Build outputs
+# dist/ is ignored; docs/ is committed on purpose (see vite.config.ts + build script)
+dist/
+
+bug_report/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+*.bak
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Vite
+.vite/
+*.local
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files (never commit real secrets)
+.env
+.env.*
+!.env.example

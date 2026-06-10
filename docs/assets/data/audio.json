@@ -1,0 +1,9 @@
+{
+  "footstep": { "file": "assets/audio/footstep.ogg", "volume": 0.25 },
+  "dialogue": { "file": "assets/audio/dialogue.ogg", "volume": 0.4 },
+  "attack": { "file": "assets/audio/attack.ogg", "volume": 0.5 },
+  "hit": { "file": "assets/audio/hit.ogg", "volume": 0.45 },
+  "victory": { "file": "assets/audio/victory.ogg", "volume": 0.55 },
+  "warp": { "file": "assets/audio/warp.ogg", "volume": 0.4 },
+  "impact": { "file": "assets/audio/impact.ogg", "volume": 0.35 }
+}
