@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "dialogues": {
+    "dima_meet": {
+      "id": "dima_meet",
+      "speaker": "Дима",
+      "portrait": "dima",
+      "lines": [
+        { "text": "Даша! Наконец-то ты нашла меня. Здесь творится что-то странное..." },
+        { "text": "В деревню заявились какие-то «венгры». Они ведут себя очень агрессивно и что-то ищут." },
+        { "text": "А в конце дороги засела сама Людмила Конюхова. Говорят, она за всем этим стоит." }
+      ],
+      "choices": [
+        {
+          "text": "Что нужно делать?",
+          "next": "dima_quest"
+        },
+        {
+          "text": "Почему именно мы?",
+          "next": "dima_why_us"
+        }
+      ]
+    },
+    "dima_why_us": {
+      "id": "dima_why_us",
+      "speaker": "Дима",
+      "portrait": "dima",
+      "lines": [
+        { "text": "Потому что мы — единственные, кто не боится этих типов. Плюша уже готова рвать и метать." },
+        { "text": "Нужно разобраться с венграми и добраться до Людмилы." }
+      ],
+      "choices": [
+        {
+          "text": "Поняла. Что за квест?",
+          "next": "dima_quest"
+        }
+      ]
+    },
+    "dima_quest": {
+      "id": "dima_quest",
+      "speaker": "Дима",
+      "portrait": "dima",
+      "lines": [
+        { "text": "Разберись с венграми на дороге и положи конец Людмиле Конюховой." },
+        { "text": "Я присоединюсь к тебе. Плюша тоже будет с нами — она отличный боец." }
+      ],
+      "choices": [
+        {
+          "text": "Вперёд. Разберёмся.",
+          "next": "dima_quest_given"
+        }
+      ]
+    },
+    "dima_quest_given": {
+      "id": "dima_quest_given",
+      "speaker": "Дима",
+      "portrait": "dima",
+      "lines": [
+        { "text": "Отлично. Я с тобой. Пойдём найдём Плюшу, она где-то впереди." }
+      ],
+      "end": true,
+      "flags": {
+        "questStarted": true,
+        "dimaJoined": true
+      }
+    },
+    "plyusha_meet": {
+      "id": "plyusha_meet",
+      "speaker": "Плюша",
+      "portrait": "plusha",
+      "lines": [
+        { "text": "Вуф! (Плюша радостно виляет хвостом и смотрит на тебя преданными глазами)" },
+        { "text": "Гав-гав! (Перевод: «Я готова рвать венгров на части! Присоединяюсь!»)" }
+      ],
+      "choices": [
+        {
+          "text": "Хорошо, Плюша. Ты с нами.",
+          "next": "plyusha_joined"
+        },
+        {
+          "text": "Ты уверена? Может, дома посидишь...",
+          "next": "plyusha_sassy"
+        }
+      ]
+    },
+    "plyusha_sassy": {
+      "id": "plyusha_sassy",
+      "speaker": "Плюша",
+      "portrait": "plusha",
+      "lines": [
+        { "text": "Р-р-р-р! (Плюша показывает зубы и явно говорит «Даже не мечтай»)" },
+        { "text": "Гав! (Перевод: «Я иду с вами. Точка.»)" }
+      ],
+      "choices": [
+        {
+          "text": "...Ладно, иди уже.",
+          "next": "plyusha_joined"
+        }
+      ]
+    },
+    "plyusha_joined": {
+      "id": "plyusha_joined",
+      "speaker": "Плюша",
+      "portrait": "plusha",
+      "lines": [
+        { "text": "Вуф-вув! (Плюша гордо встаёт рядом. Теперь в партии трое.)" }
+      ],
+      "end": true,
+      "flags": {
+        "plyushaJoined": true
+      }
+    },
+    "enemy_encounter_1": {
+      "id": "enemy_encounter_1",
+      "speaker": "Венгр",
+      "portrait": "enemy_common",
+      "lines": [
+        { "text": "Эй, вы! Здесь не для прогулок. Убирайтесь, пока целы!" }
+      ],
+      "choices": [
+        {
+          "text": "Мы здесь, чтобы разобраться.",
+          "next": "enemy_fight_start"
+        },
+        {
+          "text": "А если мы не уйдём?",
+          "next": "enemy_fight_start"
+        }
+      ]
+    },
+    "enemy_fight_start": {
+      "id": "enemy_fight_start",
+      "speaker": "Венгр",
+      "portrait": "enemy_common",
+      "lines": [
+        { "text": "Значит, по-хорошему не хотите? Тогда держитесь!" }
+      ],
+      "end": true,
+      "flags": {
+        "startCombat": "common"
+      }
+    },
+    "ludmila_intro": {
+      "id": "ludmila_intro",
+      "speaker": "Людмила Конюхова",
+      "portrait": "ludmila",
+      "lines": [
+        { "text": "Ха-ха-ха... Так это вы те самые, кто мешает моим планам?" },
+        { "text": "Венгры были только началом. А вы... вы доставили мне столько хлопот." },
+        { "text": "Но сейчас всё закончится. Здесь и сейчас." }
+      ],
+      "choices": [
+        {
+          "text": "Твоим планам конец, Людмила!",
+          "next": "ludmila_fight"
+        },
+        {
+          "text": "Почему ты вообще это делаешь?",
+          "next": "ludmila_why"
+        }
+      ]
+    },
+    "ludmila_why": {
+      "id": "ludmila_why",
+      "speaker": "Людмила Конюхова",
+      "portrait": "ludmila",
+      "lines": [
+        { "text": "Потому что могу. Потому что кто-то должен навести порядок... по-своему." },
+        { "text": "А теперь довольно болтовни." }
+      ],
+      "choices": [
+        {
+          "text": "Готовься к бою!",
+          "next": "ludmila_fight"
+        }
+      ]
+    },
+    "ludmila_fight": {
+      "id": "ludmila_fight",
+      "speaker": "Людмила Конюхова",
+      "portrait": "ludmila",
+      "lines": [
+        { "text": "Пришло время показать вам, кто здесь главный!" }
+      ],
+      "end": true,
+      "flags": {
+        "startCombat": "boss"
+      }
+    },
+    "victory_epilogue": {
+      "id": "victory_epilogue",
+      "speaker": "Дима",
+      "portrait": "dima",
+      "lines": [
+        { "text": "Мы... мы сделали это. Людмила повержена." },
+        { "text": "Плюша, ты была великолепна!" },
+        { "text": "Гав! (Плюша: «Конечно! А теперь можно домой и есть колбасу?»)" },
+        { "text": "Даша... спасибо. Без тебя бы мы не справились." },
+        { "text": "Пойдём домой. Венгры больше не посмеют сюда сунуться." }
+      ],
+      "end": true,
+      "flags": {
+        "gameFinished": true
+      }
+    }
+  }
+}
