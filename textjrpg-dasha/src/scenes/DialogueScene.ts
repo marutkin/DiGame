@@ -29,6 +29,7 @@ interface Dialogue {
   choices?: DialogueChoice[];
   end?: boolean;
   flags?: Record<string, any>;
+  next?: string;   // Автоматический переход на следующий диалог (идеально для эпилогов)
 }
 
 interface DialogueData {
@@ -111,9 +112,9 @@ export class DialogueScene extends Phaser.Scene {
       .setDepth(11)
       .setScrollFactor(0);
 
-    // Если портрета нет — placeholder
+    // Если портрета нет — используем простой тайл как fallback
     if (!this.textures.exists(portraitKey)) {
-      this.portrait.setTexture('tile_wall'); // что угодно
+      this.portrait.setTexture('tile_grass');
       this.portrait.setDisplaySize(92, 92);
     }
 
@@ -245,8 +246,13 @@ export class DialogueScene extends Phaser.Scene {
 
         this.choiceButtons.push(btn);
       });
+    } else if (this.currentDialogue.next) {
+      // Автоматический линейный переход (для эпилогов)
+      this.time.delayedCall(420, () => {
+        this.selectChoice(this.currentDialogue.next!);
+      });
     } else {
-      // Нет выборов — просто заканчиваем диалог
+      // Нет выборов — заканчиваем диалог
       this.time.delayedCall(420, () => this.finish());
     }
   }

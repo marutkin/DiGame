@@ -82,37 +82,112 @@ export class BootScene extends Phaser.Scene {
   private createTileTextures(): void {
     const g = this.add.graphics();
 
-    // Трава (тёмно-зелёная)
+    // === Улучшенная трава (с текстурой и вариациями) ===
     g.fillStyle(0x2d5a3d, 1);
     g.fillRect(0, 0, 32, 32);
-    g.lineStyle(1, 0x1f3f2a, 0.6);
+
+    // Базовая текстура травы — мелкие штрихи и точки для объёма
+    g.fillStyle(0x265033, 0.7);
+    for (let i = 0; i < 18; i++) {
+      const x = Math.random() * 32;
+      const y = Math.random() * 32;
+      g.fillRect(x, y, 1 + Math.random() * 2, 2 + Math.random() * 3);
+    }
+
+    // Светлые блики на траве
+    g.fillStyle(0x3a6b4a, 0.35);
+    for (let i = 0; i < 12; i++) {
+      const x = Math.random() * 32;
+      const y = Math.random() * 32;
+      g.fillCircle(x, y, 1 + Math.random());
+    }
+
+    g.lineStyle(1, 0x1f3f2a, 0.5);
     g.strokeRect(0, 0, 32, 32);
     g.generateTexture('tile_grass', 32, 32);
     g.clear();
 
-    // Тропинка (светло-коричневая)
+    // === Тропинка с текстурой (камушки + вариация) ===
     g.fillStyle(0x8b6f47, 1);
     g.fillRect(0, 0, 32, 32);
-    g.lineStyle(1, 0x5c4730, 0.5);
+
+    // Камушки и грязь на тропе
+    g.fillStyle(0x6b5538, 0.6);
+    for (let i = 0; i < 14; i++) {
+      const x = Math.random() * 32;
+      const y = Math.random() * 32;
+      g.fillCircle(x, y, 1 + Math.random() * 2);
+    }
+
+    g.fillStyle(0xa38b6a, 0.25);
+    for (let i = 0; i < 8; i++) {
+      const x = Math.random() * 32;
+      const y = Math.random() * 32;
+      g.fillRect(x, y, 2, 1);
+    }
+
+    g.lineStyle(1, 0x5c4730, 0.6);
     g.strokeRect(1, 1, 30, 30);
     g.generateTexture('tile_path', 32, 32);
     g.clear();
 
-    // Трава с цветочками (вариация)
+    // === Трава с цветами — больше и разнообразнее ===
     g.fillStyle(0x2d5a3d, 1);
     g.fillRect(0, 0, 32, 32);
-    g.fillStyle(0xe8a0c0, 0.9);
-    g.fillCircle(8, 10, 3);
-    g.fillCircle(22, 21, 2.5);
+
+    // Базовая текстура
+    g.fillStyle(0x265033, 0.6);
+    for (let i = 0; i < 12; i++) {
+      const x = Math.random() * 32;
+      const y = Math.random() * 32;
+      g.fillRect(x, y, 1, 2 + Math.random() * 2);
+    }
+
+    // Цветы — разные цвета и размеры
+    const flowerColors = [0xe8a0c0, 0xf4d35e, 0xa8d5a2, 0xffb3b3];
+    for (let i = 0; i < 5; i++) {
+      const x = 4 + Math.random() * 24;
+      const y = 4 + Math.random() * 24;
+      g.fillStyle(flowerColors[i % flowerColors.length], 0.85);
+      g.fillCircle(x, y, 2 + Math.random());
+      g.fillCircle(x + 3, y - 1, 1.5);
+    }
+
     g.generateTexture('tile_grass_flowers', 32, 32);
     g.clear();
 
-    // Стена / забор (тёмный)
+    // === Дерево (улучшенное, многослойное) ===
+    // Крона — несколько слоёв эллипсов
+    g.fillStyle(0x1f3f2a, 0.95);
+    g.fillEllipse(32, 28, 52, 46);
+
+    g.fillStyle(0x265033, 0.85);
+    g.fillEllipse(32, 24, 42, 38);
+
+    g.fillStyle(0x2d5a3d, 0.7);
+    g.fillEllipse(32, 22, 30, 28);
+
+    // Ствол
     g.fillStyle(0x3a2f2a, 1);
-    g.fillRect(0, 0, 32, 32);
-    g.lineStyle(2, 0x221c18, 1);
-    g.strokeRect(0, 0, 32, 32);
-    g.generateTexture('tile_wall', 32, 32);
+    g.fillRect(26, 42, 12, 22);
+
+    // Лёгкая текстура ствола
+    g.lineStyle(1, 0x2a221f, 0.6);
+    g.lineBetween(28, 44, 28, 60);
+    g.lineBetween(32, 46, 32, 61);
+    g.lineBetween(35, 45, 35, 59);
+
+    g.generateTexture('tree', 64, 70);
+    g.clear();
+
+    // === Куст (маленький) ===
+    g.fillStyle(0x265033, 0.9);
+    g.fillEllipse(20, 18, 32, 26);
+
+    g.fillStyle(0x2d5a3d, 0.75);
+    g.fillEllipse(20, 16, 22, 18);
+
+    g.generateTexture('bush', 40, 32);
     g.destroy();
   }
 

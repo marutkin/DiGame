@@ -100,9 +100,17 @@ export class WorldScene extends Phaser.Scene {
     const mapHeight = 18;
     const tileSize = 32;
 
-    // Фон — тёмная земля
-    this.add.rectangle(0, 0, mapWidth * tileSize, mapHeight * tileSize, 0x1a1423)
+    // Фон — тёмная земля (чуть теплее и естественнее)
+    this.add.rectangle(0, 0, mapWidth * tileSize, mapHeight * tileSize, 0x1f1a14)
       .setOrigin(0, 0);
+
+    // Лёгкая вариация земли по краям (чтобы не было плоско)
+    for (let i = 0; i < 28; i++) {
+      const rx = Math.random() * mapWidth * tileSize;
+      const ry = Math.random() * mapHeight * tileSize;
+      const size = 18 + Math.random() * 22;
+      this.add.ellipse(rx, ry, size, size * 0.6, 0x18140f, 0.35);
+    }
 
     // Создаём слой тайлов
     for (let y = 0; y < mapHeight; y++) {
@@ -138,16 +146,12 @@ export class WorldScene extends Phaser.Scene {
     worldBounds.width = mapWidth * tileSize;
     worldBounds.height = mapHeight * tileSize;
 
-    // Верхняя и нижняя "стена" (заборы)
-    for (let x = 0; x < mapWidth; x += 2) {
-      const wx = x * tileSize + 16;
-      this.add.image(wx, 3 * tileSize, 'tile_wall').setDisplaySize(tileSize, tileSize);
-      this.add.image(wx, 14 * tileSize, 'tile_wall').setDisplaySize(tileSize, tileSize);
-    }
+    // Верхняя и нижняя границы теперь без визуальных заборов (по запросу)
+    // Физические границы остаются, чтобы игрок не уходил за пределы карты.
   }
 
   private createDecorations(mapW: number, mapH: number, ts: number): void {
-    // Деревья слева и справа от тропы
+    // Улучшенные деревья — используем красивую текстуру вместо простых эллипсов
     const treePositions = [
       { x: 3, y: 4 }, { x: 5, y: 3 }, { x: 8, y: 5 },
       { x: 12, y: 3 }, { x: 15, y: 4 },
@@ -155,31 +159,63 @@ export class WorldScene extends Phaser.Scene {
       { x: 40, y: 4 }, { x: 44, y: 3 }
     ];
 
-    treePositions.forEach(pos => {
+    treePositions.forEach((pos, index) => {
       const tx = pos.x * ts + ts / 2;
       const ty = pos.y * ts + ts / 2;
-      const tree = this.add.ellipse(tx, ty, 28, 38, 0x1f3f2a, 0.9);
-      tree.setStrokeStyle(3, 0x14291c);
-      // Добавляем "ствол"
-      this.add.rectangle(tx, ty + 14, 8, 18, 0x3a2f2a);
+
+      // Немного вариации в размере и положении
+      const scale = 0.85 + Math.random() * 0.35;
+      const tree = this.add.image(tx, ty, 'tree');
+      tree.setScale(scale);
+      tree.setOrigin(0.5, 0.85);
+
+      // Лёгкое смещение для естественности
+      tree.x += (index % 3 - 1) * 2;
     });
 
-    // Несколько камней
+    // Кусты — добавляют объём и жизнь траве
+    const bushPositions = [
+      { x: 2, y: 6 }, { x: 6, y: 5 }, { x: 10, y: 7 },
+      { x: 13, y: 6 }, { x: 27, y: 5 }, { x: 34, y: 6 },
+      { x: 38, y: 5 }, { x: 42, y: 7 }, { x: 46, y: 6 }
+    ];
+
+    bushPositions.forEach((pos, i) => {
+      const bx = pos.x * ts + ts / 2 + (i % 2) * 4;
+      const by = pos.y * ts + ts / 2;
+      const bush = this.add.image(bx, by, 'bush');
+      const bushScale = 0.7 + Math.random() * 0.4;
+      bush.setScale(bushScale);
+      bush.setOrigin(0.5, 0.9);
+    });
+
+    // Камни — чуть более интересные
     const rocks = [
       { x: 7, y: 12 }, { x: 19, y: 13 }, { x: 33, y: 12 }, { x: 47, y: 11 }
     ];
-    rocks.forEach(r => {
+    rocks.forEach((r, i) => {
       const rx = r.x * ts + 16;
       const ry = r.y * ts + 18;
-      this.add.ellipse(rx, ry, 22, 14, 0x4a4035);
+      const rock = this.add.ellipse(rx, ry, 20 + i % 2 * 6, 13, 0x4a4035);
+      rock.setStrokeStyle(2, 0x3a3028);
     });
 
-    // Указатель "Вперёд" недалеко от старта
+    // Указатель "Вперёд"
     const sign = this.add.text(6 * ts, 8.5 * ts, '→ К Диме', {
       fontFamily: 'monospace',
       fontSize: '11px',
       color: '#e8d5b7'
     }).setOrigin(0.5);
+
+    // Дополнительные мелкие травинки и детали по краям тропы (для жизни)
+    for (let i = 0; i < 35; i++) {
+      const gx = Math.random() * (mapW * ts);
+      const gy = Math.random() * (mapH * ts);
+      const isEdge = gx < 5 * ts || gx > (mapW - 5) * ts || (gx > 18 * ts && gx < 32 * ts);
+      if (isEdge || Math.random() > 0.65) {
+        const tuft = this.add.ellipse(gx, gy, 4 + Math.random() * 5, 3, 0x265033, 0.55);
+      }
+    }
   }
 
   private createPlayer(): void {
@@ -566,6 +602,7 @@ export class WorldScene extends Phaser.Scene {
 
   private startDialogue(dialogueId: string): void {
     this.saveState();
+    this.joystick?.reset();   // сбрасываем на всякий случай перед скрытием
     this.joystick?.setVisible(false);
     this.scene.pause();
     this.scene.launch('DialogueScene', {
@@ -573,6 +610,7 @@ export class WorldScene extends Phaser.Scene {
       onComplete: (result: any) => {
         this.scene.resume();
         this.joystick?.setVisible(true);
+        this.joystick?.reset(); // на всякий случай сбрасываем стик после диалога
         this.handleDialogueResult(dialogueId, result);
       }
     });
@@ -620,6 +658,7 @@ export class WorldScene extends Phaser.Scene {
 
   private startCombat(type: 'common' | 'boss', originEnemy?: any): void {
     this.saveState();
+    this.joystick?.reset();   // сбрасываем перед боем
     this.joystick?.setVisible(false);
 
     const enemyCount = type === 'boss' ? 1 : 2;
@@ -635,11 +674,13 @@ export class WorldScene extends Phaser.Scene {
       onVictory: (data: { partyHP: any; items: any }) => {
         this.scene.resume();
         this.joystick?.setVisible(true);
+        this.joystick?.reset(); // сбрасываем стик, чтобы не было "залипания" движения после боя
         this.handleCombatVictory(type, data, originEnemy);
       },
       onDefeat: () => {
         this.scene.resume();
         this.joystick?.setVisible(true);
+        this.joystick?.reset(); // сбрасываем стик после поражения
         this.handleCombatDefeat();
       }
     });

@@ -34,18 +34,11 @@ export class EndScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     const story = [
-      'Людмила Конюхова повержена.',
+      'Посвящается всем, кто потерял год из-за «хорошего специалиста».',
       '',
-      'Даша: Короче. Мы потратили год. Но зато теперь у нас есть кругая история, кругая собака и самый лучший муж на свете.',
+      'С днём рождения, Даша ❤️',
       '',
-      'Дима: Согласен. Главное — мы вместе. И документы теперь будем делать сами.',
-      '',
-      'Плюша: Гав! (Я её чуть не покусала за ногу.)',
-      '',
-      'Людмила (последнее слово, уже лежа): Если что — мой телефон ещё работает… со скидкой для постоянных клиентов.',
-      '',
-      'А Венгрия… ну её нафиг.',
-      'Поедем лучше в Лондон на мой день рождения.'
+      'Теперь мы точно всех порвём.'
     ];
 
     let y = 170;
@@ -59,23 +52,10 @@ export class EndScene extends Phaser.Scene {
       y += 22;
     });
 
-    const thanks = this.add.text(w / 2, h - 130, 'Спасибо за игру!', {
+    const thanks = this.add.text(w / 2, h - 110, 'Спасибо за игру!', {
       fontFamily: 'monospace',
       fontSize: '16px',
       color: '#a3c17a'
-    }).setOrigin(0.5);
-
-    const birthday = this.add.text(w / 2, h - 85, 'С днём рождения, любимая Даша! ❤️', {
-      fontFamily: 'monospace',
-      fontSize: '18px',
-      color: '#ff9999',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    const dedication = this.add.text(w / 2, h - 60, 'Теперь мы точно всех порвём.', {
-      fontFamily: 'monospace',
-      fontSize: '13px',
-      color: '#e8d5b7'
     }).setOrigin(0.5);
 
     const restart = this.add.text(w / 2, h - 58, 'НАЧАТЬ СНАЧАЛА', {

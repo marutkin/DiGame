@@ -157,6 +157,24 @@ export class VirtualJoystick {
     this.stick.setVisible(visible);
   }
 
+  /** Принудительно сбрасывает джойстик в нейтральное положение.
+   *  Вызывать после возобновления сцены (например после боя), чтобы избежать "залипания".
+   */
+  reset(): void {
+    this.active = false;
+    this.pointer = null;
+
+    const centerX = this.base.x;
+    const centerY = this.base.y;
+
+    this.knob.x = centerX;
+    this.knob.y = centerY;
+
+    this.stick.clear();
+
+    this.force = { x: 0, y: 0, angle: 0, distance: 0 };
+  }
+
   destroy(): void {
     this.outer.destroy();
     this.base.destroy();
