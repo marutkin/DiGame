@@ -34,19 +34,31 @@ jobs:
           npm ci
           npm run build
 
+      # Only configure and prepare Pages artifact on pushes to main.
+      # On PRs we only validate the build (this acts as "preview" CI check).
       - name: Setup Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v4
-        with:
-          enablement: true
 
       - name: Upload artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: textjrpg-dasha/dist
 
+      # For PRs: upload the built dist as a regular artifact so you can download
+      # and manually preview the game (or we can enhance this later with hosted previews).
+      - name: Upload PR preview artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-textjrpg-dasha-${{ github.event.pull_request.number }}
+          path: textjrpg-dasha/dist
+          retention-days: 7
+
   deploy:
-    # Деплоим только на main
-    if: github.ref == 'refs/heads/main'
+    # Only deploy to GitHub Pages on pushes to main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
