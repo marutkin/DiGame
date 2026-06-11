@@ -36,6 +36,7 @@ export class WorldScene extends Phaser.Scene {
   // Following party members (after quest)
   private dimaSprite?: Phaser.GameObjects.Sprite;
   private plushaSprite?: Phaser.GameObjects.Sprite;
+  private bossSprite?: Phaser.GameObjects.Sprite;
   private playerTrail: { x: number; y: number }[] = [];
 
   // Visible enemies that can aggro
@@ -50,6 +51,11 @@ export class WorldScene extends Phaser.Scene {
 
   // Для предотвращения повторного запуска одного и того же диалога/боя
   private triggered: Set<string> = new Set();
+
+  // Простые "линии" для триггеров встречи (пересечение вместо overlap-зон)
+  private dimaLineX = 380;
+  private plushaLineX = 680;
+  private prevPlayerX = 120;
 
   constructor() {
     super({ key: 'WorldScene' });
@@ -73,18 +79,6 @@ export class WorldScene extends Phaser.Scene {
 
     // === Видимые враги (венгры), которые могут нападать ===
     this.createWorldEnemies();
-
-    // Если квест уже выполнен в сохранении — сразу ставим спутников в формацию
-    if (this.questState.dimaJoined && this.dimaSprite) {
-      this.dimaSprite.x = this.player.x - 52;
-      this.dimaSprite.y = this.player.y + 8;
-      this.dimaSprite.setFlipX(false);
-    }
-    if (this.questState.plyushaJoined && this.plushaSprite) {
-      this.plushaSprite.x = this.player.x - 70;
-      this.plushaSprite.y = this.player.y - 2;
-      this.plushaSprite.setFlipX(false);
-    }
 
     // === Управление ===
     this.setupControls();
@@ -214,6 +208,9 @@ export class WorldScene extends Phaser.Scene {
 
     // Глубина (для сортировки по Y)
     this.player.setDepth(10);
+
+    // Инициализируем предыдущую позицию для детекции пересечения линии Димы
+    this.prevPlayerX = this.player.x;
   }
 
   private createNPCs(): void {
@@ -228,6 +225,9 @@ export class WorldScene extends Phaser.Scene {
     this.dimaSprite = dima;
     this.npcs.push(dima);
 
+    // Запоминаем точную X-линию, где стоит Дима (для простого триггера "пересечь линию")
+    this.dimaLineX = dima.x;
+
     // Плюша — появляется дальше. После присоединения следует за игроком.
     // Делаем её меньше, потому что это собака.
     const plusha = this.add.sprite(680, 290, 'plusha_avatar');
@@ -240,36 +240,29 @@ export class WorldScene extends Phaser.Scene {
     this.plushaSprite = plusha;
     this.npcs.push(plusha);
 
+    // Запоминаем точную X-линию Плюши (та же простая логика пересечения линии, как у Димы)
+    this.plushaLineX = plusha.x;
+
+    // Босс — Людмила Конюхова. Стоит в конце тропы.
+    // Делаем видимой, бой запускается при приближении (только после побеждённых венгров).
+    const ludmila = this.add.sprite(1420, 275, 'ludmila_avatar');
+    ludmila.setOrigin(0.5, 0.78);
+    const ludmilaScale = 78 / ludmila.height;
+    ludmila.setScale(ludmilaScale);
+    ludmila.setDepth(9);
+    this.bossSprite = ludmila;
+
     // Подписи убраны — после присоединения они идут за Дашей и не стоят на месте
   }
 
   private createTriggers(): void {
-    // Зона разговора с Димой
-    const dimaTrigger = this.add.zone(380, 275, 90, 70);
-    dimaTrigger.setData('id', 'dima_meet');
-    dimaTrigger.setData('type', 'dialogue');
-    this.physics.add.existing(dimaTrigger, true);
-    this.triggers.push(dimaTrigger);
-
-    // Зона встречи с Плюшей (только после того, как поговорили с Димой)
-    const plushaTrigger = this.add.zone(680, 290, 80, 70);
-    plushaTrigger.setData('id', 'plyusha_meet');
-    plushaTrigger.setData('type', 'dialogue');
-    plushaTrigger.setData('requires', 'questStarted');
-    this.physics.add.existing(plushaTrigger, true);
-    this.triggers.push(plushaTrigger);
-
-    // Примечание: бои с обычными венграми теперь запускаются видимыми спрайтами
-    // в createWorldEnemies() + updateWorldEnemies() (они сами нападают при приближении).
-
-    // Финальный босс (активируется только после 1+ побеждённых врагов)
-    const bossTrigger = this.add.zone(1420, 280, 90, 80);
-    bossTrigger.setData('id', 'ludmila_intro');
-    bossTrigger.setData('type', 'combat');
-    bossTrigger.setData('combatType', 'boss');
-    bossTrigger.setData('requires', 'enemiesDefeated');
-    this.physics.add.existing(bossTrigger, true);
-    this.triggers.push(bossTrigger);
+    // ВАЖНО:
+    // - Дима и Плюша: пересечение линии
+    // - Обычные венгры: proximity в updateWorldEnemies()
+    // - Босс (Людмила): proximity к видимому спрайту bossSprite (checkBossEncounter)
+    //
+    // Зоны для этих событий не создаём — раньше это приводило к мгновенному старту боя
+    // без видимого персонажа на карте.
 
     // Визуальные маркеры триггеров (можно убрать в релизе)
     if (false) { // поставь true для отладки
@@ -387,6 +380,15 @@ export class WorldScene extends Phaser.Scene {
     // === Глубина по Y (псевдо 3D сортировка) ===
     this.player.setDepth(this.player.y + 100);
 
+    // === Простые проверки пересечения линий (Дима → Плюша) ===
+    const currX = this.player.x;
+    this.checkDimaLineCross(currX);
+    this.checkPlushaLineCross(currX);
+    this.prevPlayerX = currX;
+
+    // === Проверка приближения к боссу (Людмила) ===
+    this.checkBossEncounter();
+
     // === Проверка триггеров (для диалогов и старых триггеров) ===
     this.checkTriggers();
 
@@ -426,8 +428,119 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Самая простая логика встречи с Димой:
+   * достаточно пересечь вертикальную линию, где он стоит (в любую сторону).
+   */
+  private checkDimaLineCross(currX: number): void {
+    if (this.triggered.has('dima_meet') || !this.player) return;
+
+    const lineX = this.dimaLineX;
+
+    // Пересекли линию в любом направлении
+    const crossedForward = this.prevPlayerX < lineX && currX >= lineX;
+    const crossedBackward = this.prevPlayerX > lineX && currX <= lineX;
+
+    if (crossedForward || crossedBackward) {
+      this.triggered.add('dima_meet');
+      this.startDialogue('dima_meet');
+    }
+  }
+
+  /**
+   * Та же простая логика для Плюши:
+   * пересечь линию, где она стоит.
+   * Но только после того, как получен квест от Димы (questStarted).
+   */
+  private checkPlushaLineCross(currX: number): void {
+    if (this.triggered.has('plyusha_meet') || !this.player) return;
+
+    // Требование: квест от Димы должен быть уже взят
+    if (!this.questState.questStarted) return;
+
+    const lineX = this.plushaLineX;
+
+    // Пересекли линию в любом направлении (как у Димы)
+    const crossedForward = this.prevPlayerX < lineX && currX >= lineX;
+    const crossedBackward = this.prevPlayerX > lineX && currX <= lineX;
+
+    if (crossedForward || crossedBackward) {
+      this.triggered.add('plyusha_meet');
+      this.startDialogue('plyusha_meet');
+    }
+  }
+
+  /**
+   * Проверка приближения к боссу.
+   * Людмила теперь видна на карте.
+   * При приближении (после 1+ побеждённых венгров) запускается диалог "ludmila_intro".
+   * В конце диалога (ludmila_fight) через флаг startCombat автоматически стартует бой.
+   * Есть реакция спрайта, чтобы игрок увидел босса перед разговором.
+   */
+  private checkBossEncounter(): void {
+    if (!this.bossSprite || this.triggered.has('ludmila_intro')) return;
+    if ((this.questState.enemiesDefeated || 0) < 1) return;
+
+    const dist = Phaser.Math.Distance.Between(
+      this.player.x, this.player.y,
+      this.bossSprite.x, this.bossSprite.y
+    );
+
+    const range = 115;
+
+    if (dist < range) {
+      this.triggered.add('ludmila_intro');
+
+      // Небольшая реакция босса (как у венгров) — игрок видит, что она заметила его
+      const dx = this.player.x - this.bossSprite.x;
+      this.bossSprite.x += Math.sign(dx) * 20;
+
+      // Запускаем диалог (в конце диалога "ludmila_fight" автоматически запустит бой через флаг startCombat)
+      this.startDialogue('ludmila_intro');
+    }
+  }
+
   private tryManualInteract(): void {
-    // Ищем ближайший триггер и активируем его принудительно
+    // Специальная обработка Димы (у него теперь нет зоны — только линия пересечения)
+    if (!this.triggered.has('dima_meet') && this.dimaSprite) {
+      const d = Phaser.Math.Distance.Between(
+        this.player.x, this.player.y,
+        this.dimaSprite.x, this.dimaSprite.y
+      );
+      if (d < 95) {
+        this.triggered.add('dima_meet');
+        this.startDialogue('dima_meet');
+        return;
+      }
+    }
+
+    // Специальная обработка Плюши (та же линия-логика + требование квеста)
+    if (!this.triggered.has('plyusha_meet') && this.plushaSprite && this.questState.questStarted) {
+      const d = Phaser.Math.Distance.Between(
+        this.player.x, this.player.y,
+        this.plushaSprite.x, this.plushaSprite.y
+      );
+      if (d < 95) {
+        this.triggered.add('plyusha_meet');
+        this.startDialogue('plyusha_meet');
+        return;
+      }
+    }
+
+    // Специальная обработка босса (Людмила) — если игрок хочет вручную подойти и поговорить (диалог → бой)
+    if (!this.triggered.has('ludmila_intro') && this.bossSprite && (this.questState.enemiesDefeated || 0) >= 1) {
+      const d = Phaser.Math.Distance.Between(
+        this.player.x, this.player.y,
+        this.bossSprite.x, this.bossSprite.y
+      );
+      if (d < 100) {
+        this.triggered.add('ludmila_intro');
+        this.startDialogue('ludmila_intro');
+        return;
+      }
+    }
+
+    // Ищем ближайший обычный триггер
     let closest: Phaser.GameObjects.Zone | null = null;
     let minDist = 120;
 
@@ -465,14 +578,18 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  private handleDialogueResult(dialogueId: string, result: any): void {
+  private handleDialogueResult(dialogueId: string, result: any = {}): void {
     const state = this.questState;
+    const finalId = result.finalDialogueId || dialogueId;
 
-    if (dialogueId === 'dima_quest_given') {
+    // Используем флаги из конечного узла диалога (data-driven)
+    const flags = result.flags || {};
+
+    if (dialogueId === 'dima_meet' || finalId === 'dima_quest_given' || flags.dimaJoined) {
       state.questStarted = true;
       state.dimaJoined = true;
 
-      // Присоединяем Диму к формации сразу за Дашей — только после получения квеста
+      // Присоединяем Диму к формации сразу за Дашей — после разговора (квест выдан)
       if (this.dimaSprite) {
         this.dimaSprite.x = this.player.x - 52;
         this.dimaSprite.y = this.player.y + 8;
@@ -480,11 +597,11 @@ export class WorldScene extends Phaser.Scene {
       }
     }
 
-    if (dialogueId === 'plyusha_joined') {
+    if (dialogueId === 'plyusha_meet' || finalId === 'plyusha_joined' || flags.plyushaJoined) {
       state.plyushaJoined = true;
 
       if (this.plushaSprite) {
-        // Для маленькой Плюши (собаки) ставим ближе к формации — только после присоединения
+        // Для маленькой Плюши (собаки) ставим ближе к формации — после разговора
         this.plushaSprite.x = this.player.x - 70;
         this.plushaSprite.y = this.player.y - 2;
         this.plushaSprite.setFlipX(false);
@@ -501,7 +618,7 @@ export class WorldScene extends Phaser.Scene {
     this.saveState();
   }
 
-  private startCombat(type: 'common' | 'boss'): void {
+  private startCombat(type: 'common' | 'boss', originEnemy?: any): void {
     this.saveState();
     this.joystick?.setVisible(false);
 
@@ -518,7 +635,7 @@ export class WorldScene extends Phaser.Scene {
       onVictory: (data: { partyHP: any; items: any }) => {
         this.scene.resume();
         this.joystick?.setVisible(true);
-        this.handleCombatVictory(type, data);
+        this.handleCombatVictory(type, data, originEnemy);
       },
       onDefeat: () => {
         this.scene.resume();
@@ -528,7 +645,7 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  private handleCombatVictory(type: string, data: { partyHP: any; items: any }): void {
+  private handleCombatVictory(type: string, data: { partyHP: any; items: any }, originEnemy?: any): void {
     const state = this.questState;
 
     // Обновляем здоровье и предметы
@@ -537,6 +654,11 @@ export class WorldScene extends Phaser.Scene {
 
     if (type === 'common') {
       state.enemiesDefeated = (state.enemiesDefeated || 0) + 1;
+
+      // Убираем модельку побеждённого венгра с карты
+      if (originEnemy?.sprite) {
+        originEnemy.sprite.destroy();
+      }
     } else if (type === 'boss') {
       state.bossDefeated = true;
       state.gameFinished = true;
@@ -593,11 +715,16 @@ export class WorldScene extends Phaser.Scene {
       .setDepth(3001);
 
     retry.on('pointerdown', () => {
-      // Восстанавливаем здоровье и перезапускаем сцену
-      const fresh = this.registry.get('questState');
-      fresh.partyHP = { dasha: 42, dima: 38, plusha: 28 };
-      this.registry.set('questState', fresh);
-      localStorage.setItem('dasha_quest_state', JSON.stringify(fresh));
+      // Сбрасываем HP и предметы до начальных значений при рестарте после поражения.
+      // Прогресс квеста (enemiesDefeated, joined персонажи и т.д.) сохраняем.
+      const state = this.registry.get('questState') || {};
+      state.partyHP = { dasha: 42, dima: 38, plusha: 28 };
+      state.items = { healingPotion: 2, energyDrink: 1 };
+
+      // Обновляем ссылку в текущем экземпляре (чтобы shutdown saveState сохранил правильные значения)
+      this.questState = state;
+      this.registry.set('questState', state);
+      localStorage.setItem('dasha_quest_state', JSON.stringify(state));
 
       goText.destroy();
       retry.destroy();
@@ -616,8 +743,7 @@ export class WorldScene extends Phaser.Scene {
     // Размещаем видимых "венгров" вдоль тропы. Они будут нападать, когда игрок подойдёт близко.
     const positions = [
       { x: 920, y: 265 },
-      { x: 1070, y: 278 },
-      { x: 1250, y: 260 }   // третий ближе к боссу
+      { x: 1100, y: 272 }
     ];
 
     positions.forEach((pos, index) => {
@@ -732,7 +858,7 @@ export class WorldScene extends Phaser.Scene {
         // Небольшая задержка перед боем, чтобы игрок увидел реакцию
         this.time.delayedCall(320, () => {
           if (this.scene.isActive('WorldScene')) {
-            this.startCombat('common');
+            this.startCombat('common', we);
           }
         });
       } else {

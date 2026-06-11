@@ -1,5 +1,5 @@
 # DiGame — .gitignore
-# Phaser 3 + TypeScript + Vite project
+# Excalibur + TypeScript + Vite project
 # Build target is docs/ (committed for GitHub Pages)
 
 # Dependencies
@@ -28,6 +28,9 @@ desktop.ini
 # Vite
 .vite/
 *.local
+
+# Generated assets at runtime (user_assets/ is the source of truth)
+public/assets/
 
 # TypeScript incremental build cache
 *.tsbuildinfo

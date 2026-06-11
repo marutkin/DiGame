@@ -174,103 +174,118 @@ export class CombatScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
 
-    // Полностью тёмный фон (чтобы не было каши)
+    // Чистый тёмный фон. Никаких лишних панелей и линий.
     this.add.rectangle(w / 2, h / 2, w, h, 0x0f0a14, 1).setDepth(0);
 
-    // "Поле боя" — более тёмная зона справа для врагов
-    this.add.rectangle(w * 0.65, h * 0.42, w * 0.7, h * 0.72, 0x1a1423, 0.95).setDepth(1);
-
-    // Простая разделительная линия
-    this.add.line(0, 0, w * 0.38, 0, w * 0.38, h, 0x3a2f4a, 0.6).setDepth(2);
-
-    // === ПАРТИЯ (слева, компактно внизу) ===
-    // Сильно уменьшили, чтобы не были огромными и не перекрывали всё
-    const partyStartX = 48;
-    const partyBaseY = h * 0.82;   // максимально вниз
-    const partySpacing = 42;       // очень плотная стопка для маленьких спрайтов
+    // === ПАРТИЯ (левая колонка) ===
+    // Всё сгруппировано вертикально под спрайтом — меньше каши
+    const partyX = 105;
+    const partyStartY = 230;   // slightly lowered start to compensate for bigger spacing
+    const partySpacing = 130;  // increased vertical gap between party members
 
     this.party.forEach((member, i) => {
-      const y = partyBaseY + i * partySpacing;
+      const y = partyStartY + i * partySpacing;
 
-      const sprite = this.add.sprite(partyStartX, y, member.spriteKey);
-      // Сильно уменьшаем в бою — чтобы не было "огромных" персонажей. Плюша (собака) ещё меньше.
-      const targetH = (member.id === 'plusha') ? 20 : 30;
+      // Спрайт — full_body с жёстким размером под iPhone 16 Pro (увеличено в 1.5 раза)
+      const sprite = this.add.sprite(partyX, y, member.spriteKey);
+      const targetH = (member.id === 'plusha') ? 82 : 105;
       const origH = sprite.height || 100;
       const origW = sprite.width || 60;
       const displayH = targetH;
       const displayW = origW * (displayH / origH);
       sprite.setDisplaySize(displayW, displayH);
-      sprite.setOrigin(0.5, 0.9);
+      sprite.setOrigin(0.5, 0.5);
       sprite.setDepth(10 + i);
+
+      // Store base display size so we can reliably restore after highlight scaling
+      (sprite as any)._baseW = displayW;
+      (sprite as any)._baseH = displayH;
 
       this.partySprites.set(member.id, sprite);
 
-      // Статус сбоку, маленький и близко (для крошечных спрайтов)
-      const labelX = partyStartX + 22;
-      const label = this.add.text(labelX, y - 10, member.name, {
+      // Имя, HP и бар — строго под спрайтом (динамически под размер)
+      const halfH = targetH / 2;
+      const nameY = y + halfH + 8;
+      this.add.text(partyX, nameY, member.name, {
         fontFamily: 'monospace',
-        fontSize: '8px',
+        fontSize: '13px',
         color: '#f5e8c7',
-        backgroundColor: '#1a1423',
-        padding: { x: 2, y: 0 }
-      }).setDepth(25);
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(25);
 
-      const hpText = this.add.text(labelX, y - 1, `${member.hp}/${member.maxHp}`, {
+      // Большой HP
+      const hpY = nameY + 18;
+      const hpText = this.add.text(partyX, hpY, `${member.hp} / ${member.maxHp}`, {
         fontFamily: 'monospace',
-        fontSize: '7px',
-        color: '#a8d070'
-      }).setDepth(25);
+        fontSize: '17px',
+        color: '#a8d070',
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(25);
 
       this.hpTexts.set(member.id, hpText);
 
-      // Полоска HP — маленькая
-      const barWidth = 26;
-      const barBg = this.add.rectangle(labelX + 1, y + 6, barWidth, 2, 0x3a2a2a).setOrigin(0, 0.5).setDepth(24);
-      const bar = this.add.rectangle(labelX + 1, y + 6, barWidth * (member.hp / member.maxHp), 2, 0x6ab04a).setOrigin(0, 0.5).setDepth(24);
+      // HP бар под цифрами
+      const barY = hpY + 16;
+      const barWidth = 72;
+      this.add.rectangle(partyX - barWidth / 2, barY, barWidth, 6, 0x3a2a2a).setOrigin(0, 0.5).setDepth(24);
+      const bar = this.add.rectangle(partyX - barWidth / 2, barY, barWidth * (member.hp / member.maxHp), 6, 0x6ab04a).setOrigin(0, 0.5).setDepth(24);
       (hpText as any).hpBar = bar;
     });
 
-    // === ВРАГИ (справа, выше и компактнее) ===
-    const enemyStartX = w - 55;
-    const enemyBaseY = h * 0.28;
-    const enemySpacing = 55;
+    // === ВРАГИ (правая колонка) ===
+    // Та же вертикальная группировка — легко понять, что к чему
+    const enemyX = w - 105;
+    const enemyStartY = 220;   // slightly lowered start
+    const enemySpacing = 130;  // increased vertical gap between enemies
 
     this.enemies.forEach((enemy, i) => {
-      const y = enemyBaseY + (i - (this.enemies.length - 1) / 2) * enemySpacing;
+      const y = enemyStartY + (i - (this.enemies.length - 1) / 2) * enemySpacing;
 
-      const sprite = this.add.sprite(enemyStartX, y, enemy.spriteKey);
-      const targetH = 40;   // маленькие, чтобы не огромные и не мешали
+      // Спрайт — full_body с жёстким размером под iPhone 16 Pro (увеличено в 1.5 раза)
+      const sprite = this.add.sprite(enemyX, y, enemy.spriteKey);
+      let targetH = 98;
+      if (enemy.id === 'ludmila') targetH = 138;  // boss larger but fixed for iPhone 16 Pro
+
       const origH = sprite.height || 100;
       const origW = sprite.width || 60;
       const displayH = targetH;
       const displayW = origW * (displayH / origH);
       sprite.setDisplaySize(displayW, displayH);
-      sprite.setOrigin(0.5, 0.85);
+      sprite.setOrigin(0.5, 0.5);
       sprite.setDepth(10);
+
+      // Store base display size
+      (sprite as any)._baseW = displayW;
+      (sprite as any)._baseH = displayH;
 
       this.enemySprites.set(enemy.id, sprite);
 
-      // Имя и HP врага — слева от него
-      const label = this.add.text(enemyStartX - 30, y - 15, enemy.name, {
+      // Имя, HP и бар — строго под спрайтом (динамически под размер)
+      const halfH = targetH / 2;
+      const nameY = y + halfH + 8;
+      this.add.text(enemyX, nameY, enemy.name, {
         fontFamily: 'monospace',
-        fontSize: '8px',
+        fontSize: '13px',
         color: '#ffaaaa',
-        backgroundColor: '#1a1423',
-        padding: { x: 2, y: 0 }
+        fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(25);
 
-      const hpText = this.add.text(enemyStartX - 30, y + 1, `${enemy.hp}/${enemy.maxHp}`, {
+      // Большой HP
+      const hpY = nameY + 18;
+      const hpText = this.add.text(enemyX, hpY, `${enemy.hp} / ${enemy.maxHp}`, {
         fontFamily: 'monospace',
-        fontSize: '7px',
-        color: '#ffaaaa'
+        fontSize: '17px',
+        color: '#ffaaaa',
+        fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(25);
 
       this.hpTexts.set(enemy.id, hpText);
 
-      // Полоска HP для врага
-      const barWidth = 28;
-      this.add.rectangle(enemyStartX - 44, y + 8, barWidth, 2, 0x3a2a2a).setOrigin(0, 0.5).setDepth(24);
-      const bar = this.add.rectangle(enemyStartX - 44, y + 8, barWidth * (enemy.hp / enemy.maxHp), 2, 0xcc5555).setOrigin(0, 0.5).setDepth(24);
+      // HP бар
+      const barY = hpY + 16;
+      const barWidth = 72;
+      this.add.rectangle(enemyX - barWidth / 2, barY, barWidth, 6, 0x3a2a2a).setOrigin(0, 0.5).setDepth(24);
+      const bar = this.add.rectangle(enemyX - barWidth / 2, barY, barWidth * (enemy.hp / enemy.maxHp), 6, 0xcc5555).setOrigin(0, 0.5).setDepth(24);
       (hpText as any).hpBar = bar;
     });
   }
@@ -322,39 +337,37 @@ export class CombatScene extends Phaser.Scene {
       this.menuContainer.add(btn);
     });
 
-    // Чёткая верхняя панель статуса (в стиле старых JRPG)
-    const topPanel = this.add.rectangle(w / 2, 28, w - 16, 52, 0x1a1423, 0.97);
-    topPanel.setStrokeStyle(2, 0x5a4a7a);
-    topPanel.setDepth(15);
-
-    // Большой и понятный индикатор чьей сейчас ход
-    this.turnText = this.add.text(w / 2, 14, 'ХОД', {
+    // Упрощённая верхняя часть — только самое важное
+    // Большой и понятный индикатор хода (самое заметное)
+    this.turnText = this.add.text(w / 2, 18, 'ХОД', {
       fontFamily: 'monospace',
-      fontSize: '18px',
+      fontSize: '20px',
       color: '#ffeb99',
       fontStyle: 'bold',
       stroke: '#000000',
-      strokeThickness: 3
+      strokeThickness: 4
     }).setOrigin(0.5).setDepth(40);
 
-    // Маркер активного персонажа (будет двигаться к тому, кто ходит)
+    // Маркер ▶ (помогает понять, кто ходит)
     this.activeMarker = this.add.text(0, 0, '▶', {
       fontFamily: 'monospace',
-      fontSize: '16px',
+      fontSize: '18px',
       color: '#ffeb99'
     }).setDepth(30);
 
-    // Лог боя — короткий и читаемый
-    this.logText = this.add.text(12, 38, 'Бой начинается...', {
+    // Лог боя — маленький и не мешает
+    this.logText = this.add.text(12, 42, 'Бой начинается...', {
       fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#e8d5b7',
+      fontSize: '11px',
+      color: '#c7b8a3',
       wordWrap: { width: w - 24 }
     }).setDepth(25);
 
-    // Кнопка "Сбежать" (только против обычных врагов)
-    const flee = this.add.text(w - 70, 14, 'СБЕЖАТЬ', {
-      fontFamily: 'monospace', fontSize: '10px', color: '#ff9a9a'
+    // Кнопка "Сбежать" — маленькая, в углу
+    const flee = this.add.text(w - 68, 16, 'СБЕЖАТЬ', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#ff9a9a'
     }).setInteractive().setDepth(30);
 
     flee.on('pointerdown', () => {
@@ -429,33 +442,45 @@ export class CombatScene extends Phaser.Scene {
 
   private highlightActiveActor(actor: Combatant): void {
     const allSprites = [...this.partySprites.values(), ...this.enemySprites.values()];
+
+    // Полный сброс
     allSprites.forEach(s => {
       s.clearTint();
-      if (s.scaleX > 1) s.setScale(1);
+      const bw = (s as any)._baseW || s.displayWidth;
+      const bh = (s as any)._baseH || s.displayHeight;
+      s.setDisplaySize(bw, bh);
     });
+
+    // Удаляем предыдущую подложку хода
+    this.children.list
+      .filter((c: any) => c.getData && c.getData('turnHighlight'))
+      .forEach((c: any) => c.destroy());
 
     // Скрываем маркер по умолчанию
     if (this.activeMarker) this.activeMarker.setVisible(false);
 
     const sprite = this.partySprites.get(actor.id) || this.enemySprites.get(actor.id);
     if (sprite && actor.isAlive) {
-      // Постоянная заметная подсветка текущего ходящего
-      sprite.setTint(0xffffaa);
-      sprite.setScale(1.08);
+      // Подсветка спрайта (без изменения размера)
+      sprite.setTint(0xffff99);
 
-      // Небольшая пульсация
-      this.tweens.add({
-        targets: sprite,
-        scaleX: 1.13,
-        scaleY: 1.13,
-        duration: 380,
-        yoyo: true,
-        repeat: 1
-      });
+      // Мягкая жёлтая подложка за всем блоком персонажа (спрайт + имя + HP + бар)
+      const baseW = (sprite as any)._baseW || sprite.displayWidth;
+      const baseH = (sprite as any)._baseH || sprite.displayHeight;
+      const highlightHeight = baseH + 58;
+      const highlight = this.add.rectangle(
+        sprite.x,
+        sprite.y + 14,
+        baseW + 26,
+        highlightHeight,
+        0xffee88,
+        0.15
+      ).setDepth(4);
+      highlight.setData('turnHighlight', true);
 
-      // Показываем маркер ▶ только для своих (слева от маленького спрайта)
+      // Маркер ▶ для игроков
       if (!actor.isEnemy) {
-        this.activeMarker.setPosition(18, sprite.y - 2);
+        this.activeMarker.setPosition(26, sprite.y - 3);
         this.activeMarker.setVisible(true);
       }
     }

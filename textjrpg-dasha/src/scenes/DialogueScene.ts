@@ -284,11 +284,16 @@ export class DialogueScene extends Phaser.Scene {
       if (this.currentDialogue.flags.startCombat) {
         result.startCombat = this.currentDialogue.flags.startCombat;
       }
+      // Копируем все флаги из конечного узла (plyushaJoined, dimaJoined и т.д.)
+      result.flags = { ...this.currentDialogue.flags };
     }
 
     // Передаём управление обратно
     if (this.onComplete) {
-      this.onComplete(result);
+      this.onComplete({
+        ...result,
+        finalDialogueId: this.currentDialogue.id
+      });
     }
 
     this.scene.stop();

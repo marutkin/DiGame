@@ -24,6 +24,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('dima_avatar', 'assets/sprites/dima/avatar.png');
     this.load.image('plusha_avatar', 'assets/sprites/plusha/avatar.png');
     this.load.image('enemy_avatar', 'assets/sprites/enemy_common/avatar.png');
+    this.load.image('ludmila_avatar', 'assets/sprites/enemy_ludmila/avatar.png');
 
     // === Портреты для диалогов ===
     this.load.image('portrait_dasha', 'assets/sprites/dasha/portrait.png');
@@ -120,7 +121,15 @@ export class BootScene extends Phaser.Scene {
     if (saved) {
       try {
         const state = JSON.parse(saved);
+
+        // При любом рестарте игры (обновление страницы / новая сессия) сбрасываем HP и предметы до максимума.
+        // Прогресс квеста (присоединённые персонажи, побеждённые враги и т.д.) сохраняется.
+        state.partyHP = { dasha: 42, dima: 38, plusha: 28 };
+        state.items = { healingPotion: 2, energyDrink: 1 };
+
         this.registry.set('questState', state);
+        // Пересохраняем, чтобы localStorage тоже отражал восстановленное состояние
+        localStorage.setItem('dasha_quest_state', JSON.stringify(state));
       } catch {
         this.createFreshQuestState();
       }

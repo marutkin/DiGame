@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npm run setup:assets && vite",
     "setup:assets": "node scripts/setup-assets.mjs",
-    "build": "vite build"
+    "build": "npm run setup:assets && vite build"
   },
   "dependencies": {
     "excalibur": "^0.29.3"
