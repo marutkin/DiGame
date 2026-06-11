@@ -33,24 +33,18 @@ export class EndScene extends Phaser.Scene {
       color: '#e8d5b7'
     }).setOrigin(0.5);
 
-    const story = [
-      'Посвящается всем, кто потерял год из-за «хорошего специалиста».',
-      '',
-      'С днём рождения, Даша ❤️',
-      '',
-      'Теперь мы точно всех порвём.'
-    ];
+    // Финальный текст — только поздравление, строго внутри декоративной рамки
+    const frameTop = 80;
+    const frameHeight = h - 160;
+    const birthdayY = frameTop + frameHeight * 0.45; // внутри рамки, не по центру экрана
 
-    let y = 170;
-    story.forEach((line, i) => {
-      this.add.text(w / 2, y, line, {
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        color: '#c7b8a3',
-        align: 'center'
-      }).setOrigin(0.5);
-      y += 22;
-    });
+    const birthday = this.add.text(w / 2, birthdayY, 'С днём рождения, Любимая ❤️', {
+      fontFamily: 'monospace',
+      fontSize: '20px',
+      color: '#ff9999',
+      fontStyle: 'bold',
+      align: 'center'
+    }).setOrigin(0.5);
 
     const thanks = this.add.text(w / 2, h - 110, 'Спасибо за игру!', {
       fontFamily: 'monospace',

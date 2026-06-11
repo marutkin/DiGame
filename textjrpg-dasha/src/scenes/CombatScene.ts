@@ -412,6 +412,11 @@ export class CombatScene extends Phaser.Scene {
       return;
     }
 
+    // Очищаем все динамические меню от предыдущего хода (скиллы, предметы, цели)
+    this.children.list
+      .filter((c: any) => c.getData && (c.getData('isSkillBtn') || c.getData('isItemBtn') || c.getData('isTargetBtn')))
+      .forEach((c: any) => c.destroy());
+
     this.highlightActiveActor(actor);
 
     // Обновляем большой индикатор хода — теперь сразу понятно, чья очередь
@@ -420,11 +425,6 @@ export class CombatScene extends Phaser.Scene {
     this.turnText.setColor(isPlayer ? '#a8e8a0' : '#ff9a9a');
 
     if (!actor.isEnemy) {
-      // Ход игрока — чистим возможные остатки выбора цели
-      this.children.list
-        .filter((c: any) => c.getData && c.getData('isTargetBtn'))
-        .forEach((c: any) => c.destroy());
-
       this.isPlayerTurn = true;
       this.awaitingTarget = false;
       this.currentActionType = null;
@@ -433,6 +433,7 @@ export class CombatScene extends Phaser.Scene {
     } else {
       // Ход врага — автоматический
       this.isPlayerTurn = false;
+      this.menuContainer.setVisible(false);
       this.addLog(`${actor.name} атакует...`);
       this.time.delayedCall(420, () => {
         this.enemyTurn(actor);
@@ -492,13 +493,21 @@ export class CombatScene extends Phaser.Scene {
 
     this.currentActionType = action;
 
+    // Очищаем предыдущие подменю и прячем основное меню при выборе саб-меню
+    this.children.list
+      .filter((c: any) => c.getData && (c.getData('isSkillBtn') || c.getData('isItemBtn') || c.getData('isTargetBtn')))
+      .forEach((c: any) => c.destroy());
+
     if (action === 'attack') {
+      this.menuContainer.setVisible(false);
       this.awaitingTarget = true;
       this.addLog('Выберите цель для атаки');
       this.enableTargetSelection(actor, 'attack');
     } else if (action === 'skill') {
+      this.menuContainer.setVisible(false);
       this.showSkillMenu(actor);
     } else if (action === 'item') {
+      this.menuContainer.setVisible(false);
       this.showItemMenu(actor);
     } else if (action === 'defend') {
       this.performDefend(actor);
@@ -524,9 +533,13 @@ export class CombatScene extends Phaser.Scene {
         backgroundColor: '#222a3a', padding: { x: 8, y: 3 }
       }).setInteractive().setDepth(50);
 
+      btn.setData('isSkillBtn', true);
+
       btn.on('pointerdown', () => {
-        btn.destroy();
-        list.forEach((_, j) => { /* cleanup */ });
+        // Уничтожаем все кнопки навыков этого меню
+        this.children.list
+          .filter((c: any) => c.getData && c.getData('isSkillBtn'))
+          .forEach((c: any) => c.destroy());
         this.performSkill(actor, skill);
       });
     });
@@ -576,9 +589,14 @@ export class CombatScene extends Phaser.Scene {
         fontFamily: 'monospace', fontSize: '13px', color: '#a3e8a3'
       }).setInteractive().setDepth(50);
 
+      btn.setData('isItemBtn', true);
+
       btn.on('pointerdown', () => {
+        // Уничтожаем все кнопки предметов
+        this.children.list
+          .filter((c: any) => c.getData && c.getData('isItemBtn'))
+          .forEach((c: any) => c.destroy());
         this.useItem(actor, opt.key);
-        btn.destroy();
       });
     });
   }
